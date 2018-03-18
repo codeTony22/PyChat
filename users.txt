@@ -1,0 +1,5 @@
+fortega cnt4713 admin false
+jgonz cnt4713 sysop false
+pepe @ channelop true
+dariel cnt4710 user	false
+william cnt4710 user false

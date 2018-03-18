@@ -1,0 +1,32 @@
+[
+    {
+        "username": "fortega",
+        "password": "cnt4713",
+        "levels": "admin",
+        "status": false
+    },
+    {
+        "username": "jgonz",
+        "password": "dinamita",
+        "levels": "sysop",
+        "status": false
+    },
+    {
+        "username": "pepedinamita",
+        "password": "dinamita",
+        "levels": "user",
+        "status": false
+    },
+    {
+        "username": "josedinamita",
+        "password": "dinamita",
+        "levels": "user",
+        "status": false
+    },
+    {
+        "username": "jgonz",
+        "password": "password123",
+        "levels": "user",
+        "status": false
+    }
+]

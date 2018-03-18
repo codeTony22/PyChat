@@ -1,0 +1,14 @@
+[
+  {
+    "username": "fortega",
+    "password": "cnt4713",
+    "levels": "admin",
+    "status": "false"
+  },
+  {
+    "username": "jgonz",
+    "password": "dinamita",
+    "levels": "sysop",
+    "status": "false"
+  }
+]
