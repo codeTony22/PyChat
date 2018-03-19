@@ -88,7 +88,7 @@ class Server:
             elif '/help' in chatMessage:
                 self.help(client.get_clientSocket())
             elif '/join' in chatMessage:
-                self.join(client.get_clientSocket(), chatMessage, client.get_clientName())
+                self.join(chatMessage, client)
             else:
                 self.send_message(client.get_clientSocket(), chatMessage + '\n' , client.get_clientName())
         client.get_socket().close()
@@ -164,30 +164,30 @@ class Server:
         socket.sendall(Server.HELP_MESSAGE)
 
 
-    def join(self, clientSocket, chatMessage, clientName):
+    def join(self, chatMessage, client):
         isInSameRoom = False
 
         if len(chatMessage.split()) >= 2:
             channelName = chatMessage.split()[1]
 
-            if clientName in self.channels_client_map: # Here we are switching to a new channel.
-                if self.channels_client_map[clientName] == channelName:
-                    clientSocket.sendall(("\n> You are already in channel: " + channelName).encode('utf8'))
+            if client.get_clientName() in self.channels_client_map: # Here we are switching to a new channel.
+                if self.channels_client_map[client.get_clientName()] == channelName:
+                    client.send_message("\n> You are already in channel: " + channelName)
                     isInSameRoom = True
                 else: # switch to a new channel
-                    oldChannelName = self.channels_client_map[clientName]
-                    self.channels[oldChannelName].remove_client_from_channel(clientName) # remove them from the previous channel
+                    oldChannelName = self.channels_client_map[client.get_clientName()]
+                    self.channels[oldChannelName].remove_client_from_channel(client.get_clientName()) # remove them from the previous channel
 
             if not isInSameRoom:
                 if not channelName in self.channels:
                     newChannel = Channel.Channel(channelName)
                     self.channels[channelName] = newChannel
 
-                self.channels[channelName].clients[clientName] = clientSocket
-                self.channels[channelName].welcome_client(clientName)
-                self.channels_client_map[clientName] = channelName
+                self.channels[channelName].clients[client.get_clientName()] = client
+                self.channels[channelName].welcome_client(client.get_clientName())
+                self.channels_client_map[client.get_clientName()] = channelName
         else:
-            self.help(clientSocket)
+            self.help(client.get_clientSocket())
 
     def send_message(self, clientSocket, chatMessage, clientName):
         if clientName in self.channels_client_map:
