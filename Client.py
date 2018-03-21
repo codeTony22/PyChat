@@ -7,24 +7,10 @@ class Client:
         self.clientName = "anonymous"
         self.clientPassword = "@" #Empty password
         self.levels = "user"
+        self.away = False
         self.status = False
+        self.awayMessage = ""
 
-    '''
-        def __init__(self, username, password, client_socket):
-        self.username = username
-        self.password = password
-        self.client_socket = client_socket
-        self.levels = "user"
-        self.status = True
-        
-    def __init__(self, username, password, levels, banned):
-        self.username = username
-        self.password = password
-        self.levels = levels
-        self.banned = banned
-        self.status = True
-        self.client_socket = None
-    '''
 
     def send_message(self, message):
         self.clientSocket.sendall(message.encode('utf8'))
@@ -66,3 +52,15 @@ class Client:
 
     def set_status(self, status):
         self.status = status
+
+    def get_away(self):
+        return self.away
+
+    def set_away(self, away):
+        self.away = away
+
+    def get_awayMessage(self):
+        return self.awayMessage
+    def set_awayMessage(self, awayMessage):
+        self.awayMessage = awayMessage
+

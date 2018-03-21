@@ -5,6 +5,16 @@ import json
 
 class Serialization:
 
+    def read_ServerConfigInfo(self, clientSocket):
+        with open("chatserver.conf", "r", encoding="utf-8") as serverFile:
+            size_to_read = 100
+            f_contents = serverFile.readline(size_to_read)
+
+            while len(f_contents) > 0:
+                line = f_contents
+                clientSocket.sendall(line.encode("utf-8"))
+                f_contents = serverFile.readline(size_to_read)
+
     def reading_user_txt_file(self):
         list_clients = []
 

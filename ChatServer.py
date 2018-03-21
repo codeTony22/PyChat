@@ -89,6 +89,10 @@ class Server:
                 self.help(client.get_clientSocket())
             elif '/join' in chatMessage:
                 self.join(chatMessage, client)
+            elif '/away' in chatMessage:
+                self.away(client, chatMessage)
+            elif '/info' in chatMessage:
+                self.info(client.get_clientSocket())
             else:
                 self.send_message(client.get_clientSocket(), chatMessage + '\n' , client.get_clientName())
         client.get_socket().close()
@@ -133,12 +137,19 @@ class Server:
     server. Add information about the server. 
     """
     def info(self, clientSocket):
-        clientSocket.sendall("The Server version is 1.0.")
+        self.serializer.read_ServerConfigInfo(clientSocket)
 
-    def away(self, clientSocket, chatMessage):
-        PRIVMSG = chatMessage[5:]
-        if PRIVMSG:
-            self.away_clients[clientSocket] = chatMessage
+
+    def away(self, client, chatMessage):
+        PRIVAWAAYMSG = chatMessage[5:]
+
+        if PRIVAWAAYMSG is "":
+            client.set_away(False)
+
+        if client.get_away() == False and PRIVAWAAYMSG:
+            client.set_away(True)
+            client.set_awayMessage(PRIVAWAAYMSG)
+
 
     #Kill the server, any user can
     #TO DO - FIX
