@@ -8,10 +8,10 @@ from . import Serialization
 from . import ServerConfig
 
 class SocketThreadedTask(threading.Thread):
-    def __init__(self, socket, callback):
+    def __init__(self, socket, **callbacks):
         threading.Thread.__init__(self)
         self.socket = socket
-        self.callback = callback
+        self.callbacks = callbacks
 
     def run(self):
         while True:
@@ -19,11 +19,27 @@ class SocketThreadedTask(threading.Thread):
                 message = self.socket.receive()
 
                 if message == '/quit':
-                    self.callback('\n> You have been disconnected from the server.\n')
+                    self.callbacks['clear_chat_window']()
+                    self.callbacks['update_chat_window']('\n> You have been disconnected from the server.\n')
                     self.socket.disconnect()
                     break
+                elif message == '/squit':
+                    self.callbacks['clear_chat_window']()
+                    self.callbacks['update_chat_window']('\n> The server was forcibly shutdown. No further messages are able to be sent\n')
+                    self.socket.disconnect()
+                    break
+                elif 'joined' in message:
+                    split_message = message.split('|')
+                    self.callbacks['clear_chat_window']()
+                    self.callbacks['update_chat_window'](split_message[0])
+                    self.callbacks['update_user_list'](split_message[1])
+                    self.callbacks['update_channel_list'](split_message[1])
+                elif 'left' in message:
+                    self.callbacks['update_chat_window'](message)
+                    self.callbacks['remove_user_from_list'](message.split(' ')[2])
+                    self.callbacks['remove_channel_from_list'](message.split(' ')[2])
                 else:
-                    self.callback(message)
+                    self.callbacks['update_chat_window'](message)
             except OSError:
                 break
 
@@ -115,6 +131,40 @@ class ChatWindow(tk.Frame):
         self.messageTextArea.configure(state='normal')
         self.messageTextArea.insert(tk.END, message)
         self.messageTextArea.configure(state='disabled')
+
+    def update_user_list(self, user_message):
+        users = user_message.split(' ')
+
+        for user in users:
+            if user not in self.usersListBox.get(0, tk.END):
+                self.usersListBox.insert(tk.END, user)
+
+    def remove_user_from_list(self, user):
+        print(user)
+        index = self.usersListBox.get(0, tk.END).index(user)
+        self.usersListBox.delete(index)
+
+    def update_channel_list(self, channel_message):
+        channels = channel_message.split(' ')
+
+        for channel in channels:
+            if channel not in self.channelListBox.get(0, tk.END):
+                self.channelListBox.insert(tk.END, channel)
+
+    def remove_channel_from_list(self, channel):
+        print(channel)
+        index = self.channelListBox.get(0, tk.END).index(channel)
+        self.channelListBox.delete(index)
+
+    def clear_chat_window(self):
+        if not self.messageTextArea.compare("end-1c", "==", "1.0"):
+            self.messageTextArea.configure(state='normal')
+            self.messageTextArea.delete('1.0', tk.END)
+            self.messageTextArea.configure(state='disabled')
+
+        if self.usersListBox.size() > 0:
+            self.usersListBox.delete(0, tk.END)
+
 
     def send_message(self, **callbacks):
         message = self.entryField.get()
