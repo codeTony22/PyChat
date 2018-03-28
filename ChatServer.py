@@ -93,32 +93,133 @@ class Server:
                 self.away(client, chatMessage)
             elif '/info' in chatMessage:
                 self.info(client.get_clientSocket())
+            elif '/ison' in chatMessage:
+                query = self.ison(chatMessage)
+                if query == []:
+                    client.send_message("\n>None of the nickname/s are connected in the network\n")
+                else:
+                    for name in query:
+                        client.send_message("\n>" + name + " is connected.\n")
+            elif '/kick' in chatMessage:
+                self.kick(client, chatMessage)
+            elif '/kill' in chatMessage:
+                self.kill(client, chatMessage)
+            elif '/privmsg' in chatMessage:
+                self.privmsg(client, chatMessage)
+            elif '/invite'  in chatMessage:
+                self.invite(client, chatMessage)
+            elif '/mode' in chatMessage:
+                self.mode(client, chatMessage)
+            elif '/nick' in chatMessage:
+                self.nick()
             else:
                 self.send_message(client.get_clientSocket(), chatMessage + '\n' , client.get_clientName())
         client.get_socket().close()
 
-    def privmsg(self, chatMessage):
-        commands = chatMessage.split()
-        msgtarget = commands[1]
+    def privmsg(self, client, chatMessage):
+        args_list = chatMessage.split()
+        msg_target = args_list[1]
+        message = args_list[2]
+
+        self.channels[self.channels_client_map[msg_target]].broadcast_message(message, msg_target)
+
+    def mode(self, client , chatMessage):
+        args_list = chatMessage.split()
+
+        if  len(args_list) >= 3:
+            flag = args_list[2]
+            #mode change user flag -u must be set
+            if flag == "-u":
+                pass
+            elif flag == "-c":
+                pass
+
+    def get_all_channelName(self):
+        result = []
+        for channel in self.channels:
+            result.append(channel)
+
+        return result
+
+    def invite(self, client, chatMessage):
+        arg_list = chatMessage.split()
+
+        if len(arg_list) >= 2:
+            msgtarget = arg_list[1]
+            channel = arg_list[2]
+            if channel in self.channels:
+                if channel.get_mode() == True:
+                    if client.get_levels() == "channelop" or client.get_levels() == "admin":
+                        self.join(msgtarget)
+                    else:
+                        client.send_message("\n>Invite Incomplete. Not a channel operator.\n")
+                else:
+                    if client.get_clientName() in self.channels_client_map:
+                        target_client = self.find_client_target(msgtarget)
+                        target_client.send_message("\n>" + client.get_clientName() + " has invited you to a channel. Leaving your channel.\n")
+                        self.join(target_client)
+
+            else:
+                target_client_object = self.find_client_target(msgtarget)
+                self.join_invite(target_client_object, channel)
+                self.join_invite(client, channel)
+        else:
+            client.send_message("\n>Command Usage Error.\n\n>/invite msg_target channel \n")
 
 
-    def kick(self, clientName, chatMessage):
-        list_of_commands = chatMessage.split()
-        channel = list_of_commands[1]
-        clientToRemove = list_of_commands[2]
-        message = list_of_commands[3]
+    def join_invite(self, client, channelName):
+        isInSameRoom = False
 
-        #This command can be issued by any user
-        if clientToRemove in self.channels_client_map:
-            del self.channels_client_map[clientToRemove]
-        #TO DO - send message to the user
+        if client.get_clientName() in self.channels_client_map:
+            if channelName in self.channels_client_map[client.client.get_clientName()]:
+                # User already on that channel
+                client.send_message("\n> You are already in channel: " + channelName)
+                isInSameRoom = True
+            elif not channelName in self.channels_client_map[client.client.get_clientName()] and channelName in self.channels:
+                self.channels[channelName].clients[client.get_clientName()] = client
+                self.channels_client_map[client.get_clientName()].append(channelName)
+
+        if not isInSameRoom:
+            if not channelName in self.channels:
+                newChannel = Channel.Channel(channelName)
+                self.channels[channelName] = newChannel
+            self.channels[channelName].clients[client.get_clientName()] = client
+            self.channels[channelName].welcome_client(client.get_clientName())
+            self.channels_client_map[client.get_clientName()].append(channelName)
+
+    '''
+    Find_client_target is a function that find the msgtarget if the user is connected. 
+    If given the clientName. returns None if client was not found.
+    '''
+    def find_client_target(self, msgtarget):
+        if msgtarget in self.channels_client_map:
+            return self.channels[self.channels_client_map[msgtarget]]
+        return None
 
 
-    def kill(self, clientSocket , clientName, chatMessage):
-        list_of_commands = chatMessage.split()
-        if clientName in self.channels_client_map:
-            del self.channels_client_map[clientName]
-        #TO DO SEND NAME
+
+    def kick(self, client , chatMessage):
+        if client.get_levels() == "channelop" or client.get_levels() == "admin":
+            args = chatMessage[5:]
+            list_args = args.split()
+
+            channelName = list_args[0]
+            clientName = list_args[1]
+            message = list_args[2]
+            if clientName in self.channels[channelName].clients:
+                del self.channels[channelName].clients[clientName]
+                client.send_message(message)
+
+    def kill(self, client , chatMessage):
+        if client.get_levels() == "channelop" or client.get_levels() == "admin":
+            args_list = chatMessage.split()
+            clientName = args_list[1]
+            message = args_list[2]
+
+            if clientName in self.channels_client_map:
+                self.channels[self.channels_client_map[clientName]].clients[clientName].send_message(message)
+                del self.channels[self.channels_client_map[clientName]].clients[clientName]
+                del self.channels_client_map[clientName]
 
 
     def ison(self, chatMessage):
@@ -131,6 +232,7 @@ class Server:
             if name in self.channels_client_map:
                 query.append(name)
 
+        return query
 
     """
     Information of the server. Program only uses one 
@@ -181,22 +283,23 @@ class Server:
         if len(chatMessage.split()) >= 2:
             channelName = chatMessage.split()[1]
 
-            if client.get_clientName() in self.channels_client_map: # Here we are switching to a new channel.
-                if self.channels_client_map[client.get_clientName()] == channelName:
+            if client.get_clientName() in self.channels_client_map:
+                if channelName in self.channels_client_map[client.client.get_clientName()]:
+                    # User already on that channel
                     client.send_message("\n> You are already in channel: " + channelName)
                     isInSameRoom = True
-                else: # switch to a new channel
-                    oldChannelName = self.channels_client_map[client.get_clientName()]
-                    self.channels[oldChannelName].remove_client_from_channel(client.get_clientName()) # remove them from the previous channel
+                elif not channelName in self.channels_client_map[
+                    client.client.get_clientName()] and channelName in self.channels:
+                    self.channels[channelName].clients[client.get_clientName()] = client
+                    self.channels_client_map[client.get_clientName()].append(channelName)
 
             if not isInSameRoom:
                 if not channelName in self.channels:
                     newChannel = Channel.Channel(channelName)
                     self.channels[channelName] = newChannel
-
                 self.channels[channelName].clients[client.get_clientName()] = client
                 self.channels[channelName].welcome_client(client.get_clientName())
-                self.channels_client_map[client.get_clientName()] = channelName
+                self.channels_client_map[client.get_clientName()].append(channelName)
         else:
             self.help(client.get_clientSocket())
 
@@ -210,7 +313,6 @@ Use /list to see a list of available channels.
 Use /join [channel name] to join a channels.\n\n""".encode('utf8')
 
             clientSocket.sendall(chatMessage)
-
 
     def remove_client(self, clientName):
         if clientName in self.channels_client_map:

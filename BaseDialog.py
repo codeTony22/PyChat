@@ -17,7 +17,7 @@ class BaseDialog(tk.Toplevel):
         body.pack(padx=5, pady=5)
 
         """
-        createa an ok and cancel button and also binds the return and escape key.
+        create an ok and cancel button and also binds the return and escape key.
         """
         self.buttonbox()
 

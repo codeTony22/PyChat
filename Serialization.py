@@ -1,7 +1,7 @@
 from Client import Client
 import socket
 import json
-
+import ServerConfig
 
 class Serialization:
 
@@ -14,6 +14,24 @@ class Serialization:
                 line = f_contents
                 clientSocket.sendall(line.encode("utf-8"))
                 f_contents = serverFile.readline(size_to_read)
+
+    def setServerConfigInfo(self):
+        with open("chatserver.conf", "r", encoding="utf-8") as serverFile:
+            size_to_read = 100
+            f_contents = serverFile.readline(size_to_read)
+            args_list = f_contents.split()
+            host = args_list[1]
+
+            f_contents = serverFile.readline(size_to_read)
+            args_list = f_contents.split()
+            port = args_list[1]
+
+            dbpath= serverFile.readline(size_to_read).split()[1]
+            ports = serverFile.readline(size_to_read).split()[2]
+            list_of_ports = ports.split(',')
+
+            return ServerConfig(host, port, dbpath, list_of_ports)
+
 
     def reading_user_txt_file(self):
         list_clients = []
@@ -28,7 +46,7 @@ class Serialization:
             # user password admin true/false
             while len(f_contents) > 0:
                 line = f_contents.split()
-                client = Client(line[0], line[1], line[2] , line[3])
+                client = Client(line[0], line[1], line[2], line[3])
                 list_clients.append(client)
                 f_contents = file.readline(size_to_read)
 

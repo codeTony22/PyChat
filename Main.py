@@ -4,6 +4,8 @@ import ChatClient as client
 import BaseDialog as dialog
 import BaseEntry as entry
 import threading
+from . import Serialization
+from . import ServerConfig
 
 class SocketThreadedTask(threading.Thread):
     def __init__(self, socket, callback):
@@ -93,12 +95,15 @@ class ChatWindow(tk.Frame):
         self.messageTextArea.grid(row=0, column=0, columnspan=2, sticky="nsew")
 
         self.messageScrollbar = tk.Scrollbar(parent, orient=tk.VERTICAL, command=self.messageTextArea.yview)
-        self.messageScrollbar.grid(row=0, column=3, sticky="ns")
+        self.messageScrollbar.grid(row=0, column=2, sticky="ns")
 
         self.messageTextArea['yscrollcommand'] = self.messageScrollbar.set
 
         self.usersListBox = tk.Listbox(parent, bg="white")
         self.usersListBox.grid(row=0, column=4, padx=5, sticky="nsew")
+
+        self.channelListBox = tk.Listbox(parent, bg="white")
+        self.channelListBox.grid(row=0, column=3, padx=5, sticky="nsew")
 
         self.entryField = entry.BaseEntry(parent, placeholder="Enter message.", width=80)
         self.entryField.grid(row=1, column=0, padx=5, pady=10, sticky="we")
@@ -180,6 +185,17 @@ class ChatGUI(tk.Frame):
                 SocketThreadedTask(self.clientSocket, self.ChatWindow.update_chat_window).start()
             else:
                 tk.messagebox.showwarning("Error", "Unable to connect to the server.")
+
+        else:
+            serializer = Serialization()
+            serverConfig = serializer.setServerConfigInfo()
+            self.clientSocket.connect(serverConfig.get_hostname(), serverConfig.get_port())
+
+            if self.clientSocket.isClientConnected:
+                SocketThreadedTask(self.clientSocket, self.ChatWindow.update_chat_window).start()
+            else:
+                tk.messagebox.showwarning("Error", "Unable to connect to the server.")
+
 
     def on_closing(self):
         if self.clientSocket.isClientConnected:

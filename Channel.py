@@ -5,7 +5,15 @@ class Channel:
         self.channel_name = name
         self.topic = "General"
         self.channe_op = []
+        # Invite by any user, False.
+        #If true invite by operators
+        self.mode = False
 
+    def get_mode(self):
+        return self.mode
+
+    def set_mode(self, mode):
+        self.mode = mode
 
     def welcome_client(self, clientName=""):
         for name, client in self.clients.items():
@@ -22,6 +30,7 @@ class Channel:
                 client.send_message(("You: " + chatMessage))
             else:
                 client.send_message(clientName + chatMessage)
+
 
     def remove_client_from_channel(self, clientName):
         del self.clients[clientName]
